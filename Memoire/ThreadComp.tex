@@ -1,0 +1,392 @@
+% !TeX program = pdflatex
+% !TeX encoding = UTF-8
+% !TeX spellcheck = fr
+% !TeX TXS-program:bibliography = txs:///biber
+%
+% Template d'article avec programmes (en français) - Version PDFLaTeX
+%
+% Yves ROGGEMAN - octobre 2017 - PDFLaTeX
+%
+\documentclass[a4paper,twoside,10pt,english,french,twocolumn]{article}
+%---                           % Encodage pour PDFLaTeX  
+\usepackage[T1]{fontenc}       % Encodage le plus étendu
+\usepackage[utf8]{inputenc}    % Source Unicode en UTF-8
+\usepackage{comment}           % Commentaires multilignes
+%---
+\title{Les threads en Java8 et C++17}
+\author{Nicolas Potvin~\thanks\thethanks}
+\date{\DTMToday}
+\newcommand{\thethanks}{Université libre de Bruxelles (ULB)
+<\href{mailto:nicolas.potvin@ulb.ac.be}{nicolas.potvin@ulb.ac.be}>}
+\newcommand{\thesubject}{Comparaison de threads}
+\newcommand{\thekeywords}{Thread ; Java ; C++}
+\newcommand{\thelang}{fr}
+% Définit les variables du titre (pour usage dans le document)
+\makeatletter
+\let\thetitle\@title
+\let\thedate\@date
+{ % Définit '\theauthor' sans '\thanks' et '\thefilename' sans "..."
+\def\auth@f#1~#2@{#1}\xdef\theauthor{\expandafter\auth@f\@author~@}
+\def\fn@f#1.#2@{#1}\xdef\thefilename{\expandafter\fn@f\jobname.@.tex}
+}
+\makeatother
+% ---------------------------------------------------------------------------
+% Mise en page (voir aussi geometry)
+% \setlength{\parindent}{0pt}
+\setlength{\parskip}{\medskipamount}
+\setlength{\textfloatsep}{\intextsep}
+\renewcommand{\topfraction}{1}
+\renewcommand{\textfraction}{0}
+% ---------------------------------------------------------------------------
+% Paragraphe et note en marge
+\newcommand{\newpar}{\par\addvspace{\medskipamount}}
+\reversemarginpar
+\newcommand{\mymarginpar}[1]{%   Colle au texte !
+  \marginpar[\raggedleft\footnotesize#1]{\raggedright\footnotesize#1}
+}
+% ---------------------------------------------------------------------------
+% Packages de base
+\usepackage{etoolbox}          % Utilitaires e-TeX (tests, variables, flags, etc.)
+\usepackage{xkeyval}           % Syntaxe des paramètres [par=...]
+\usepackage{xspace}            % Gestion intelligente des espaces après macros
+%---                           % Polices pour PDFLaTeX
+\usepackage{babel}             % En français, s.v.p. (avec anglais 2d)
+\frenchbsetup{StandardItemizeEnv=true,StandardItemLabels=true} % Paramètres pour frenchb.dtx
+\usepackage[full]{textcomp}    % Jeu de symboles du "Companion"
+\usepackage{amsmath}           % Commandes supplémentaires en mode "math"
+\usepackage{amssymb}           % Jeu de symboles AMS, sur-ensemble d'amsfonts
+\usepackage{amsthm}            % Environnement "theorem" enrichi
+\usepackage{mathcomp}          % Textcomp en mode math
+\usepackage{mathdots}          % Redéfinit les \x_dots et ajoute \iddots
+\usepackage{mathtools}         % Compléments et corrections d'amsmath
+\usepackage{textgreek}         % Caractères grecs (hors math)
+\usepackage{csquotes}
+%---
+\usepackage[frenchstyle]{kpfonts}   % Polices "Kp-Fonts", alias Kelpler (GPL) -- option : easyscsl,
+% \usepackage{dejavu}            % Polices DéjàVu - Attention : sans SmallCaps
+\usepackage{DejaVuSerif}
+\usepackage[scaled]{DejaVuSans}
+\usepackage[scaled]{DejaVuSansMono}
+%---
+\renewcommand{\familydefault}{\sfdefault}  % Pour polices sans empattement
+%---
+% \ifdefstring{\familydefault}{\sfdefault}{\mathversion{sf}}{}   % math sf aussi (sfmath in kpfonts)
+\usepackage[frenchmath]{mathastext} % ,unicodeminus
+%
+\let\oldscshape=\scshape
+\ifdefstring{\familydefault}{\sfdefault}     % SmallCaps de Kp-Fonts (si nécesaire)
+{\renewcommand*{\scshape}{\fontfamily{jkpssk}\oldscshape\selectfont}}%
+{\renewcommand*{\scshape}{\fontfamily{jkpk}\oldscshape\selectfont}}%
+%---
+\usepackage{geometry}          % Dimension des marges etc.
+\geometry{                     % Paramètres pour dito
+  inner=25mm,outer=20mm,
+  top=25mm,bottom=25mm,head=5mm,
+  marginpar=15mm,marginparsep=6pt,
+}
+\usepackage{enumitem}          % Mise en page des listes
+\setlist[1]{labelindent=\parindent} % paramètres pour dito (identation de base)
+\usepackage{graphicx}          % Inclusion de figures et graphiques
+\graphicspath{{$HOME/Images/Logos/}{$HOME/}{../../common_img/}}
+\usepackage{xcolor}            % Caractères colorés
+\definecolor{Pantone287}{RGB}{0,76,147} % Couleur Logo ULB
+\usepackage{fancyvrb}          % Environnement 'Verbatim' (avec majuscule !)
+\usepackage{numprint}          % Formatage des nombres
+\npfourdigitnosep              % Paramètres pour dito
+\usepackage{caption}           % Titres des figures et tableaux plus corrects
+\captionsetup{labelfont=sc,labelsep=endash,position=top} % Paramètres pour dito
+\captionsetup[figure]{name=Schéma}                       % idem (suite)
+\captionsetup[table]{name=Table}                         % idem (suite)
+% \usepackage{tabularx}          % Tableaux à colonnes de largeur variable
+\usepackage{longtable}         % Tableaux sur plusieurs pages etc.
+\usepackage[                   % Insertion de marques "to do"
+  textsize=tiny,
+  textwidth=13mm,
+  backgroundcolor=yellow
+  ]{todonotes}
+\usepackage{hyperref}          % Table des matières en signets (PDF-LaTeX)
+\hypersetup{                   % Paramètres pour dito
+  unicode,
+  bookmarksnumbered,
+  breaklinks,
+  nesting,
+  pdftitle={\thetitle},
+  pdfauthor={\theauthor},
+  pdfsubject={\thesubject},
+  pdfkeywords={\thekeywords},
+  pdflang={\thelang},
+}
+%---
+% \VerbatimFootnotes             % Permet ainsi \verb en note de bas de page
+% ---------------------------------------------------------------------------
+% Outils graphiques ("Portable Graphics Format" + "TikZ ist kein Zeichenprogramm")
+\usepackage{pgf}               % in tikz, mais utile pour option
+\usepgflibrary{decorations.markings}
+\usepackage{tikz}              % in pgfplots, mais utle pour biblios
+\usetikzlibrary{shapes,arrows,chains,calc}
+\usepackage{pgfplots}          % Graphiques en 2D et 3D
+\pgfplotsset{compat=1.15}      % Bonne version pour dito
+% \usetikzlibrary{               % autres options ?
+%   backgrounds,
+%   mindmap,
+%   trees,
+%   automata,
+%   positioning,
+%   fit,
+%   shapes.multipart
+% }
+% ---------------------------------------------------------------------------
+% En-tête et pied de page
+\usepackage[useregional,showdow,showseconds=false,showzone=false,%
+    datesep=/,timesep=\ensuremath{\!\colon\!\!}]{datetime2}
+\usepackage{lastpage}
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+  \renewcommand{\sectionmark}[1]{\markboth{#1}{}}
+  \renewcommand{\subsectionmark}[1]{\markright{#1}}
+  \fancyhf{}
+  \fancyhead[LO,RE]{\nouppercase{\leftmark}}
+  \fancyhead[RO,LE]{\slshape\footnotesize\nouppercase{\rightmark}}
+  \fancyfoot[LO,RE]{\footnotesize\texttt{\thefilename} \\ \DTMsetstyle{default}\DTMnow}
+  \fancyfoot[C]{-~\thepage~/~\pageref{LastPage}~-}
+  \fancyfoot[RO,LE]{\footnotesize\theauthor \\ \thetitle}
+%
+\fancypagestyle{plain}{ %  Première page ----------------------
+  \fancyhf{}
+  \renewcommand{\headrulewidth}{0pt}
+  \fancyheadoffset[R]{15mm}
+%   \addtolength{\headheight}{35pt}    % pour warning, mais...
+%   \addtolength{\textheight}{-35pt}   % semble sans effet !
+  \fancyhead[L]{
+    \raisebox{-7mm}{
+      \parbox{\textwidth}{
+        \includegraphics{barrette-original} \\[\baselineskip]
+        \fontsize{8pt}{10pt}\selectfont
+        \sffamily\color{Pantone287}
+        FACULTÉ DES SCIENCES       \\
+        DÉPARTEMENT D'INFORMATIQUE
+      }
+    }
+  }
+  \fancyhead[R]{
+    \raisebox{-10mm}[0pt][0pt]{\includegraphics[width=120mm]{ULB-ligne-gauche}}
+  }
+  \fancyfoot[L]{\raisebox{0mm}{}\color{Pantone287}\footnotesize\texttt{\thefilename} \\
+    \DTMsetstyle{default}\DTMnow}
+  \fancyfoot[C]{-~\thepage~/~\pageref{LastPage}~-}
+  \fancyfoot[R]{
+    \raisebox{-12pt}{\includegraphics[height=\footskip]{sceau-b-quadri}}
+  }
+} % Fin de première page
+% ---------------------------------------------------------------------------
+% Mise en page de programmes et algorithmes
+\usepackage{listings}
+\lstdefinelanguage[Extended]{C++}[ISO]{C++}{ % extension: description d'algo
+  morekeywords={algo,assert,downto,esac,fi,forall,input,loop,mod,od,
+                otherwise,output,pool,repeat,stopif,then,until,upto,when},
+  literate={<-}{\ensuremath{\leftarrow}}{3}
+           {<->}{\ensuremath{\rightleftharpoons}}{3} % after '<-' definition
+           {&&}{\ensuremath{\wedge}}{3}
+           {||}{\ensuremath{\vee}}{3}
+           {!}{\ensuremath{\neg}}{3}
+           {<=}{\ensuremath{\leq}}{3}
+           {>=}{\ensuremath{\geq}}{3}
+           {!=}{\ensuremath{\neq}}{3} % after '!' definition
+           {==}{\ensuremath{\equiv}}{3},
+}
+\lstloadlanguages{[ISO]C++,[Extended]C++}
+% Styles définis pour environnement {lstlisting}
+\lstdefinestyle{Clong}{ % Pour inclusion fixe d'un fichier
+  firstline=5,
+  firstnumber=1,
+  belowskip=\bigskipamount,
+  frame=tb,
+  columns=[c]flexible,
+}
+\lstdefinestyle{Cfloat}{ % Pour inclusion flottante d'un fichier
+  firstline=5,
+  firstnumber=1,
+  float,
+  frame=tb,
+  columns=[c]flexible,
+}
+\lstdefinestyle{Cpart}{ % Pour morceaux de programme
+  texcl,
+  escapeinside={/*@}{@*/},
+  escapebegin={\sffamily\itshape},
+  columns=[c]flexible,
+}
+\lstdefinestyle{Cin}{ % Pour écriture directe d'un code C++
+  frame=tb,
+  texcl,
+  escapeinside={/*@}{@*/},
+  escapebegin={\sffamily\itshape},
+  columns=[c]flexible,
+}
+\lstdefinestyle{Cext}{ % Pour description d'un algorithme
+  language=[Extended]C++,
+  texcl,
+  mathescape,
+  escapeinside={/*@}{@*/},
+  escapebegin={\sffamily\itshape},
+  columns=[c]flexible,
+}
+\lstset{ % Paramètres par défaut définis en fonction de \lstinline
+  language=[ISO]C++,
+  gobble=2, % Oubli des 2 premiers caractères de la ligne
+  basicstyle={\ttfamily\small},
+  commentstyle={\sffamily\itshape},
+%   stringstyle=\itshape,
+  tabsize=3,
+  numbers=left,
+%   stepnumber=5,
+  numberstyle=\tiny,
+  numbersep=6pt,
+  floatplacement=htb,
+  belowcaptionskip=\medskipamount, % \bigskipamount,
+  xleftmargin=28.45275pt, % = 1cm
+  framexleftmargin=28.45275pt, % = 1cm
+%   resetmargins,
+  breaklines,
+  breakindent=28.45275pt, % = 1cm
+  columns=[c]fullflexible,
+  keepspaces=true,
+  fancyvrb=true,
+}
+% Commandes associées utiles
+% \newcommand{\lstlbl}[1]{#1} % Pour étiqueter un programme (cf. \label)
+\newcommand{\lstref}[1]{ % Pour référence en marge à un fichier de programmes
+  \mymarginpar{\tiny\ttfamily<#1>}
+}
+\newcommand{\lstinputf}[3]{ % Inclusion flottante
+  \mymarginpar{\tiny\ttfamily<#1>}
+  \lstinputlisting[style=Cfloat,caption={#2 - \texttt{<#1>}},label={#3}]{#1}%
+}
+\newcommand{\lstinput}[3]{ % Inclusion fixe
+  \mymarginpar{\tiny\ttfamily<#1>}
+  \lstinputlisting[style=Clong,caption={#2 - \texttt{<#1>}},label={#3}]{#1}
+}
+\newcommand{\lstfn}{\lstinline [basicstyle=\footnotesize]} % En bas de page
+% ---------------------------------------------------------------------------
+% Abréviations utiles
+\newcommand{\cpp}{\mymarginpar{\fbox{\large\ttfamily C++}}}
+\newcommand{\Cpp}{\texttt{C++}\xspace}
+\newcommand{\Java}{\texttt{Java}\xspace}
+\newcommand{\ie}{\textit{i.e.}\ }  % ID EST
+\newcommand{\eg}{\textit{e.g.}\ }  % EXEMPLI GRATIA
+\newcommand{\cf}{\textit{cf.}\ }   % CONFER
+\newcommand{\vs}{\textit{vs.}\ }   % VERSUS
+\newcommand{\PP}{\mathbb{P}}       % Probability: \Pr variant
+\newcommand{\Exp}{\mathbb{E}}      % Expected value
+\DeclareMathOperator{\rank}{rank}  % Rank of matrix
+\DeclareMathOperator{\im}{im}      % Image of
+\DeclareMathOperator{\lcm}{lcm}    % Least Commun Mutliple
+% ---------------------------------------------------------------------------
+% Environnements "théorème" francisés
+% \newcommand{\qed}{\hspace*{1em}\hfill\ensuremath{\blacksquare}}  % QUOD ERAT DEMONSTANDUM (U+220E)
+\renewcommand{\qedsymbol}{\ensuremath{\blacksquare}}  % QUOD ERAT DEMONSTANDUM (U+220E)
+\theoremstyle{definition}
+\newtheorem*{definition}{Définition}
+\theoremstyle{remark}
+\newtheorem{remarque}{Remarque}
+\newtheorem*{exemple}{Exemple}
+\newtheorem*{note}{Note}
+\theoremstyle{plain}
+\newtheorem{theoreme}{Théorème}[section]
+\newtheorem{lemme}[theoreme]{Lemme}
+\newtheorem{corollaire}[theoreme]{Corollaire}
+\newtheorem{propriete}[theoreme]{Propriété}
+\newtheorem{conjecture}[theoreme]{Conjecture}
+% ---------------------------------------------------------------------------
+% Contexte "questions"
+\newcounter{quest}
+\newcommand{\question}[2]{% En-tête "Question"
+  \addtocounter{quest}{1}
+  \section*{Question~\thequest.~-- #1 {\small(#2~points)}}%
+}
+%
+%
+%
+%
+%
+%
+%
+%
+%
+%
+%
+%
+% ---------------------------------------------------------------------------
+%
+%
+%
+%
+%
+%
+%
+%
+%
+%
+%
+%
+\begin{document}
+%
+% Titre des preuves en gras
+\let\oldproofname=\proofname
+\renewcommand{\proofname}{\bfseries\oldproofname}
+% Version française des titres (surcharge babel après \begin{document})
+\renewcommand{\listfigurename}{Liste des schémas}
+\renewcommand{\listtablename}{Liste des tables}
+\renewcommand{\lstlistingname}{Programme}
+\renewcommand{\lstlistlistingname}{Liste des programmes}
+%
+\maketitle
+%
+\begin{abstract}
+To be done
+\end{abstract}
+
+\section{Introduction}
+
+
+\section{A propos des threads}
+
+\subsection{Qu'est-ce qu'un thread ?}
+Un thread, dans le jargon informatique, est ce qu'on appelle en français un \enquote*{fil d’exécution}. Il s'agit de la succession d'opérations nécessaires à l’exécution d'un programme (ou d'une partie d'un programme). Lorsqu'un programme s’exécute, nous parlons de processus. Un processus contient toujours au moins un thread qui représente le fil d’exécution principal du programme. Cependant, il peut aussi contenir plusieurs threads lorsqu'une parallélisation du traitement des données est possible. A titre d'exemple imaginons le processus \enquote{Changer une roue de voiture}, un seul garagiste peut changer les quatre roues l'une après l'autre. Mais deux garagistes iraient deux fois plus vite car il n'est pas nécessaire d’avoir fini de changer la première roue pour changer la deuxième. Dans cet exemple les garagistes représentent les threads. Nous pourrions même aller jusque quatre threads pour changer toutes les roues sur le temps qu'il faut pour n'en changer qu'une.\\
+Lorsque nous programmons, c'est ainsi que nous réfléchissons, nous pensons faire des programmes rapides et performants grâce à la parallélisation. Malheureusement, dans un ordinateur, les choses ne sont pas toujours aussi simples. Il est tout à fait possible qu'un programme multi-thread prenne en réalité le même temps qu'un programme mono-thread, par exemple à cause de l'architecture du processeur. Les parties des différents threads seraient alors exécutées les unes après les autres, et la parallélisation n'aurait pas réellement lieu. Lorsque nous parlons de performances, ce genre de considération entre en jeu, mais dans cet article nous nous concentrerons sur la manière dont les threads sont implémentés en Java et en C++. L'exécution réelle est laissée au système d'exploitation qui décidera que faire en fonction de la machine sur laquelle le programme s'exécute.\\
+Dans tous les langages, les threads se manipulent de manières différentes, mais il y a cependant des points communs. Lorsqu'un thread est créé, il faut démarrer son exécution, généralement via une méthode \textit{start}. De manière équivalente, il existe souvent une méthode opposée \textit{stop} ou autre pour arrêter un thread. Il est important de noter que stopper un thread ne devrait se faire que lorsque le processus est sur le point de s'arrêter pour éviter les problèmes d'inconsistance \textcolor{red}{(source?)}. Une dernière méthode importante est la méthode \textit{join} qui sert à fixer ce qu'on appelle un \enquote*{rendez-vous}. Imaginez l'exemple du changement de roues dans le cas d'une course de formule 1, si le pilote et les techniciens représentent tous des threads, il faut que le pilote attende que tous les techniciens aient fini avant de démarrer. Un rendez-vous est exactement ça, un thread qui attend qu'un (ou plusieurs) autre thread arrive à la fin de leur execution avant de repartir.
+
+\subsection{Problèmes de concurrence}
+Deux threads d'un même processus peuvent accéder tous les deux à des zones de la mémoire réservées à ce processus. Cette particularité est très pratique lorsque nous voulons que deux threads puissent communiquer. Cependant un problème peut survenir lorsqu'un thread lit l'information stockée en mémoire pendant qu'elle est modifiée par un autre thread. Ce scénario est ce qu'on appelle une \enquote*{data race}. D'autres scénarios problématiques sont possibles, mais ils ont tous comme point commun qu'ils sont causés par un manque de synchronisation des threads.\\
+La solution au problème se trouve dans les \enquote*{opérations atomiques}. Une opération atomique est une opération qui est exécutée en entier par le processeur sans être interrompue, en d'autres mots, elle est incassable en plusieurs sous-opérations. Cette caractéristique permet de s'assurer que si un thread effectue une opération atomique, il sera le seul à l'effectuer.
+\subsubsection*{Les mutex}
+Pour garantir la consistance de la mémoire, une solution est l'utilisation des \textit{mutex}. Un mutex se comporte un peu comme le verrou d'une cabine. Lorsque quelqu'un entre, il ferme le verrou, empêchant quiconque de rentrer. Il ne l'ouvrira que lorsqu'il aura terminé et qu'il sortira, laissant la place à une éventuelle autre personne attendant au dehors. Nous pouvons protéger un accès à une zone de la mémoire grâce à ce genre de mécanisme, les mutex présentent toujours au moins deux opérations \textit{lock} et \textit{unlock} (ou \textit{release}) qui permettent de fermer le verrou et de l'ouvrir. Le plus souvent, les mutex proposent aussi une troisième opération de base \textit{trylock} permettant d'essayer de rentrer, et si le verrou est fermé, le thread n'attend pas (ne reste pas bloqué) et peut faire autre chose. Toutes ces opérations ont la particularité qu'elles sont atomiques, condition \textit{sine qua non} du bon fonctionnement d'un mutex.\\
+Plusieurs types différents de mutex existent, en plus des mutex \enquote*{simples} décrits précédemment, nous parlerons des mutex récursifs. Ceux ci se comportent de la même manière à la différence qu'ils comptent le nombre de fois que l'opération \textit{lock} leur aura été appliquée et ne se libéreront qu'une fois qu'ils auront reçu un nombre égal d'opérations \textit{unlock}. En reprenant l'analogie de la porte à verrou, un mutex récursif serait une porte avec plusieurs verrous.
+\subsubsection*{Les sémaphores}
+Jusqu'à présent nous avons considéré un mutex (simple) comme un verrou. Nous pouvons adopter un autre point de vue et le voir comme un compteur représentant le nombre de places libre. Il vaudrait 1 lorsque la place est libre, et 0 lorsque la place est prise. Les threads ne peuvent donc accéder à la zone protégée que lorsque le mutex vaut 1. Mais parfois, il est possible qu'il y ait plus qu'une place possible. Le sémaphore fonctionne exactement ainsi. Lorsqu'il vaut 0 et qu'un thread essaie d'entrer, il devra attendre. Sinon, il décrémentera le compteur et entrera. Lorsqu'un thread a fini son travail dans la zone protégée, il sortira en incrémentant le compteur.
+
+\subsection{Les threads en C++17}
+C++ fait correspondre les threads du programme avec les threads du système d'exploitation. Intuitivement, il pourrait s'agir de la manière la plus efficace de procéder. Ainsi les différents fils d’exécution sont gérés directement pas l'OS. \textcolor{red}{(p1362)}\\
+\subsubsection*{Classe thread}
+Dans le langage C++, les threads sont manipulés à travers des objets de la classe thread. Il est important de garder à l'esprit que toute instanciation de la classe thread ne représente pas un fil d'exécution si il est créé via le constructeur par défaut. De manière équivalente, un objet thread utilisé pour lancer un thread ne représentera un fil d'exécution réel que tant que ce fil n'a pas terminé son exécution (qu'il a des tâches à effectuer) ou que le thread n'est pas détaché. Un thread est détaché lorsque le fil d'exécution poursuit son exécution mais n'est plus représenté par un objet thread instancié.\\
+De manière générale, nous pouvons voir ces objets thread comme une interface entre l'OS et le programmeur pour manipuler facilement les différents fils d'exécution. La méthode \textit{join} expliquée précédemment est implémentée. La méthode \textit{start} n'est pas implémentée explicitement, lorsqu'un thread est créé via un constructeur spécialisé ou un constructeur de transfert, il est automatiquement lancé. La méthode \textit{stop} n'est pas implémentée du tout. Nous pourrions penser que le destructeur pourrait tenir ce rôle, mais il ne détruit l'objet thread que si il est détaché ou si le fil d'exécution est terminé. Le programmeur qui souhaite tout de même avoir un contrôle sur l'exécution du thread doit implémenter lui même un \textit{stop} (par exemple via un flag booléen partagé qui serait vérifié régulièrement par le thread secondaire qui mettrait fin à son exécution lui même si le flag venait à changer). L'avantage qu'en tire le programmeur est qu'il gère lui même la manière dont le thread s'interrompt, évitant qu'il soit brutalement interrompu, risquant de laisser la mémoire dans un état inconsistant.\\
+\subsubsection*{Gestion de la concurrence}
+C++ propose une classe \textit{mutex} qui implémente des méthodes \textit{lock}, \textit{unlock} et \textit{try\_lock} décrites précédemment. Une classe \textit{recursive\_mutex} existe aussi, elle implémente les trois même méthodes et fonctionne exactement comme les mutex récursifs expliqués ci-avant. Il existe également \textit{timed\_mutex} dont la seule différence par rapport à un mutex normal est que le programmeur peut utiliser la méthode \textit{try\_lock} avec un délai qui correspond à un temps d'attente pendant lequel le thread courant essaiera d'acquérir le mutex.\\
+\textcolor{green}{shared\_mutex ?}
+
+\subsection{Les threads en Java8}
+Contrairement à C++, une fois compilé, le code Java ne tourne pas directement sur la machine, mais plutôt sur une machine virtuelle. Nous nous intéresserons d'abord au langage avant d'observer de plus prés ce qui se passe au niveau de la machine virtuelle.
+\subsubsection*{Classe \textit{Thread} et interface \textit{Runnable}}
+En Java, il existe une classe \textit{Thread} qui constitue le seul moyen offert par le langage pour manipuler des fils d'exécution. Cette classe implémente l'interface \textit{Runnable} qui ne contient qu'une méthode, la méthode \textit{run}. Nous pouvons voir cette méthode comme la méthode \textit{main} d'un processus, il s'agit en quelque sorte du point d'entrée du \textit{thread}. Le code exécuté par le thread sera celui écrit dans l'implémentation de \textit{run}.\\
+Pour instancier un \textit{thread} il faut soit coder une sous classe de \textit{Thread} soit instancier \textit{Thread} directement en passant au constructeur un objet implémentant l'interface \textit{Runnable}, dans ce cas, la méthode \textit{run} du thread sera celle de l'objet. Ces deux méthodes ont leurs avantages et leurs inconvénients. Une classe héritée de \textit{Thread} a l'avantage de pouvoir redéfinir les méthodes de \textit{Thread}, permettant un contrôle plus fin du \textit{thread}. Implémenter l'interface \textit{Runnable} permet de le faire à la volée lors de la création du thread si les tâches à effectuer ne demandent pas trop de code, évitant de se perdre dans des fichiers contenant de nouvelles classes. Un autre avantage beaucoup plus pratique est qu'une classe anonyme créée à la volée au sein d'une autre classe permet d'accéder aux attributs de cette classe. Il est toujours possible de coder une nouvelle classe implémentant l'interface si le programmeur n'a pas besoin de redéfinir les autres méthodes de \textit{Thread}. Dans ce cas les deux manières de faire se valent.\\
+Lorsqu'un \textit{thread} est créé, il faut explicitement le démarrer avec la méthode \textit{start}. Il existe aussi une méthode \textit{stop} mais elle est dépréciée, pour les raisons évoquées dans la section C++; arrêter un \textit{thread} en pleine exécution risque de laisser des parties de la mémoire dans un état inconsistant, compromettant la bonne marche de tout le processus. La méthode \textit{join} est implémentée et fonctionne exactement comme expliqué plus haut, Java propose également une surdéfinition de cette méthode avec une durée en argument, permettant d'attendre que le \textit{thread} termine durant un certain temps sans bloquer éternellement.
+\subsubsection*{Concurrence et synchronisation}
+Java introduit la notion de \textit{moniteur}; en pratique, un moniteur se manipule comme un \textit{mutex récursif} via les méthodes \textit{lock} et \textit{unlock}. Chaque objet instancié en Java se voit associer un moniteur\textcolor{red}{(p660)}, ce qui veut dire que chaque objet peut être utilisé comme un \textit{mutex récursif}.\\
+Il est ensuite possible de coder plus ou moins comme en C++ en utilisant les moniteurs des objets avec lesquels le programmeur travaille. Mais Java nous permet de gérer la synchronisation de manière plus sûre grâce au mot-clé \textit{synchronized}. Ce mot du langage s'utilise juste avant un bloc d'instruction, avec en argument une référence vers un objet qui servira de moniteur pour ce bloc. Si il est utilisé dans la signature d'une méthode, l'objet qui implémente cette méthode sert de moniteur, si la méthode est statique, le moniteur utilisé est associé à la classe.\textcolor{red}{(p660)}\\
+\textcolor{green}{parler des wait sets, wait, notify et notifyAll ?\\parler de volatile ?}
+
+\subsection{La machine virtuelle Java}
+
+
+\end{document}
+%

@@ -1,0 +1,17 @@
+C++ maps threads one to one with the os (kernel) threads
+
+Taper l'introduction :
+	-Expliquer ce qu'est un thread, comment ça marche
+	-Glisser un mot sur l'implementation par l'os (une ou deux phrases)
+	-Parler des mécanismes de base (mutex, lock, syncrho ...)
+	-Présentation chronologique de java et de la jvm
+	-Présentation de C++ (dire comment c'était fait jusque maintenant, puis parler de la bibliothèque standard)
+	-Parler du scheduling et de ce qu'on peut faire avec (soit le faire soi-même soit laisser le compilateur le faire)
+	-Lorsque je parle de l'implémentation, préciser que je peux très bien avoir plusieurs morceaux de différents threads qui sont en fait mis bout à bout
+
+Coder les tests :
+	-Trouver un algorithme qui se prète bien à la parallélisation (chercher du côté des graphes ou des réseaus neuronaux, si jamais)
+	-Implémenter l'algo en multithread et en single thread dans les deux langages
+	-Faire tourner plusieurs fois les programmes et mesurer le temps et la mémoire occupée
+	-Comparer non pas les langages entre eux, mais le gain réalisé par la parallélisation
+	-Faire des tests pour voir les les gains et pertes de temps en fonction du nombre de threads

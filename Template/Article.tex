@@ -1,0 +1,648 @@
+% !TeX program = lualatex
+% !TeX encoding = UTF-8
+% !TeX spellcheck = fr
+% !TeX TXS-program:bibliography = txs:///biber
+%
+% Template d'article avec programmes (en français)
+%
+% Yves ROGGEMAN - octobre 2017 - LuaLaTeX
+%
+\documentclass[a4paper,twoside,10pt,english,french]{article}   % ,twocolumn
+%---                           % Encodage pour LuaLaTeX (= full unicode)
+% \usepackage{fontspec}
+\usepackage[no-math]{fontspec} % Si unicode-math
+\usepackage{comment}           % Commentaires multilignes
+%---
+\title{À la tâche : Lorem ipsum cum computatione}
+\author{Yves Roggeman~\thanks\thethanks}
+\date{\DTMToday}
+\newcommand{\thethanks}{Université libre de Bruxelles (ULB)
+<\href{mailto:yves.roggeman@ulb.ac.be}{\tt yves.roggeman@ulb.ac.be}>}
+\newcommand{\thesubject}{Canevas LaTeX avec algorithme}
+\newcommand{\thekeywords}{LaTeX ; PDF ; algorithme}
+\newcommand{\thelang}{fr}
+% Définit les variables du titre (pour usage dans le document)
+\makeatletter
+\let\thetitle\@title
+\let\thedate\@date
+{ % Définit '\theauthor' sans '\thanks' et '\thefilename' sans "..."
+\def\auth@f#1~#2@{#1}\xdef\theauthor{\expandafter\auth@f\@author~@}
+\def\fn@f#1.#2@{#1}\xdef\thefilename{\expandafter\fn@f\jobname.@.tex}
+}
+\makeatother
+% ---------------------------------------------------------------------------
+% Mise en page
+% voir aussi geometry
+% \setlength{\parindent}{0pt}
+\setlength{\parskip}{\medskipamount}
+\setlength{\textfloatsep}{\intextsep}
+\renewcommand{\topfraction}{1}
+\renewcommand{\textfraction}{0}
+% ---------------------------------------------------------------------------
+% Paragraphe et note en marge
+\newcommand{\newpar}{\par\addvspace{\medskipamount}}
+\reversemarginpar
+\newcommand{\mymarginpar}[1]{%   Colle au texte !
+  \marginpar[\raggedleft\footnotesize#1]{\raggedright\footnotesize#1}
+}
+% ---------------------------------------------------------------------------
+% Packages de base
+\usepackage{luatexbase}
+\usepackage{ifluatex}
+\usepackage{etoolbox}          % Utilitaires e-TeX (tests, variables, flags, etc.)
+\usepackage{xkeyval}           % Syntaxe des paramètres [par=...]
+\usepackage{xspace}            % Gestion intelligente des espaces après macros
+%---
+\usepackage[full]{textcomp}    % Jeu de symboles du "Companion"
+\usepackage{amsmath}           % Commandes supplémentaires en mode "math"
+\usepackage{amssymb}           % Jeu de symboles AMS, sur-ensemble d'amsfonts
+\usepackage{amsthm}            % Environnement "theorem" enrichi
+\usepackage{mathcomp}          % Textcomp en mode math
+\usepackage{mathdots}          % Redéfinit les \x_dots et ajoute \iddots
+\usepackage{mathtools}         % Compléments et corrections d'amsmath
+%---                           % Polices pour LuaLaTeX
+\usepackage{lualatex-math}
+% \usepackage[math-style=ISO]{unicode-math}
+\usepackage[math-style=french]{unicode-math}
+%                              % Texte sinistroverse
+\newcommand*{\textHebrew}[1]{\begingroup\textdir TRT#1\endgroup}
+\newcommand*{\textArabic}[1]{\begingroup\textdir TRT#1\endgroup}
+\newenvironment{Hebrew}{\textdir TRT\pardir TRT\bodydir TRT}{}
+\newenvironment{Arabic}{\textdir TRT\pardir TRT\bodydir TRT}{}
+%---                             Polices STIX-2 "par défaut"
+\setmainfont[Scale=1.1]{STIX Two Text}   % NB. ni Hebrew ni Arabic
+\setmathfont{STIX Two Math}    % Nécessite unicode-math
+% Polices Google
+\begin{comment}
+\setsansfont[Scale=MatchUppercase]{Fira Sans}   % NB. ni Hebrew ni Arabic
+% \setmonofont{Fira Mono}
+\setmonofont[Ligatures=TeX]{Fira Code}   % Alternative avec ligatures
+\newfontfamily{\Hebrfont}[Script=Hebrew]{Alef}
+\DeclareTextFontCommand{\textHebr}{\Hebrfont}
+\renewcommand*{\textHebrew}[1]{\begingroup\Hebrfont\textdir TRT#1\endgroup}
+\renewenvironment{Hebrew}{\Hebrfont\textdir TRT\pardir TRT\bodydir TRT}{}
+\newfontfamily{\Arabfont}[Script=Arabic,Scale=1.1]{KacstOne}
+\DeclareTextFontCommand{\textArab}{\Arabfont}
+\renewcommand*{\textArabic}[1]{\begingroup\Arabfont\textdir TRT#1\endgroup}
+\renewenvironment{Arabic}{\Arabfont\textdir TRT\pardir TRT\bodydir TRT}{}
+\end{comment}
+% Polices Linux Libertine
+\begin{comment}
+\setmainfont[Scale=1.15]{Linux Libertine O}   % NB. pas d'Arabic
+\setsansfont[Scale=MatchUppercase]{Linux Biolinum O}   % NB. pas d'Arabic
+% \setmonofont{Linux Libertine Mono O}   % Sans bold !
+\setmonofont[Scale=MatchUppercase]{Hack}
+\newfontfamily{\Arabfont}[Script=Arabic,Scale=1.15]{Noto Naskh Arabic}
+\DeclareTextFontCommand{\textArab}{\Arabfont}
+\renewcommand*{\textArabic}[1]{\begingroup\Arabfont\textdir TRT#1\endgroup}
+\renewenvironment{Arabic}{\Arabfont\textdir TRT\pardir TRT\bodydir TRT}{}
+\end{comment}
+% Polices GNU (Free UCS Outline Fonts)
+\begin{comment}
+\setmainfont{FreeSerif}[%        NB. pas de SmallCaps
+  Scale=1.2,
+  UprightFeatures={SmallCapsFont={STIX Two Text}},
+  BoldFeatures={SmallCapsFont={STIX Two Text Bold}},
+  ItalicFeatures={SmallCapsFont={STIX Two Text Italic}},
+  BoldItalicFeatures={SmallCapsFont={STIX Two Text Bold Italic}},
+  SmallCapsFeatures={Letters=SmallCaps,Scale=1.2},
+  ]
+\setsansfont{FreeSans}[%         NB. pas de SmallCaps
+  Scale=MatchUppercase,
+  UprightFeatures={SmallCapsFont={Fira Sans}},
+  BoldFeatures={SmallCapsFont={Fira Sans Bold}},
+  ItalicFeatures={SmallCapsFont={Fira Sans Italic}},
+  BoldItalicFeatures={SmallCapsFont={Fira Sans Bold Italic}},
+  SmallCapsFeatures={Letters=SmallCaps,Scale=MatchUppercase},
+  ]
+\setmonofont{FreeMono}[%
+  Scale=MatchLowercase,
+  FakeStretch=0.9]
+\renewcommand*{\textArabic}[1]{\begingroup\rmfamily\textdir TRT#1\endgroup}
+\renewenvironment{Arabic}{\rmfamily\textdir TRT\pardir TRT\bodydir TRT}{}
+\end{comment}
+% Polices DéjàVu (ex BitStream Vera Fonts)
+% \usepackage[TT={Scale=MatchUppercase}]{dejavu-otf}   % at least v. 0.02 04/10/2017
+% \begin{comment}
+\setmainfont{DejaVuSerif}[%      NB. pas de SmallCaps
+  Scale=0.92,
+  Extension=.ttf,
+  UprightFont=*,
+  BoldFont=*-Bold,
+  ItalicFont=*-Italic,
+  BoldItalicFont=*-BoldItalic,
+  UprightFeatures={Letters=SmallCaps,SmallCapsFont=STIX2Text-Regular.otf},
+  BoldFeatures={Letters=SmallCaps,SmallCapsFont=STIX2Text-Bold.otf},
+  ItalicFeatures={Letters=SmallCaps,SmallCapsFont=STIX2Text-Italic.otf},
+  BoldItalicFeatures={Letters=SmallCaps,SmallCapsFont=STIX2Text-BoldItalic.otf},
+  SmallCapsFeatures={Letters=SmallCaps,Scale=MatchUppercase},
+  ]
+\setsansfont{DejaVuSans}[%       NB. pas de SmallCaps
+  Scale=0.92,
+  Extension=.ttf,
+  UprightFont=*,
+  BoldFont=*-Bold,
+  ItalicFont=*-Oblique,
+  BoldItalicFont=*-BoldOblique,
+  UprightFeatures={Letters=SmallCaps,SmallCapsFont=FiraSans-Regular.otf},
+  BoldFeatures={Letters=SmallCaps,SmallCapsFont=FiraSans-Bold.otf},
+  ItalicFeatures={Letters=SmallCaps,SmallCapsFont=FiraSans-BookItalic.otf},
+  BoldItalicFeatures={Letters=SmallCaps,SmallCapsFont=FiraSans-BoldItalic.otf},
+  SmallCapsFeatures={Letters=SmallCaps,Scale=MatchUppercase},
+  ]
+\setmonofont{DejaVuSansMono}[%
+  Scale=MatchUppercase,
+  Extension=.ttf,
+  UprightFont=*,
+  BoldFont=*-Bold,
+  ItalicFont=*-Oblique,
+  BoldItalicFont=*-BoldOblique,
+  ]
+%
+\renewcommand*{\textHebrew}[1]{\begingroup\sffamily\textdir TRT#1\endgroup}
+\renewcommand*{\textArabic}[1]{\begingroup\sffamily\textdir TRT#1\endgroup}
+\renewenvironment{Hebrew}{\sffamily\textdir TRT\pardir TRT\bodydir TRT}{}
+\renewenvironment{Arabic}{\sffamily\textdir TRT\pardir TRT\bodydir TRT}{}
+%
+\setmathfont{DejaVuMathTeXGyre.ttf}   % Nécessite unicode-math
+% \end{comment}
+%---
+\renewcommand{\familydefault}{\sfdefault}  % Pour polices sans empattement
+%---
+% \usepackage[frenchmath,unicodeminus]{mathastext}   % pas avec DéjàVu !
+\ifdefstring{\familydefault}{\sfdefault}%
+{\newfontfamily{\CJKfont}{Noto Sans CJK JP}[Script=CJK]}%
+{\newfontfamily{\CJKfont}{Noto Serif CJK JP}[Script=CJK]}%
+\DeclareTextFontCommand{\textCJK}{\CJKfont}   % reste horizontal !
+%---
+% \let\luatexpardir=\pardir      %%% Pour luabidi buggé (<- Omega, anciennement renommé)
+% \let\luatextextdir=\textdir    %%% Pour luabidi buggé (<- Omega, anciennement renommé)
+% \let\luatexbodydir=\bodydir    %%% Pour luabidi buggé (<- Omega, anciennement renommé)
+% \let\luatexpagedir=\pagedir    %%% Pour luabidi buggé (<- Omega, anciennement renommé)
+% \let\luatexmathdir=\mathdir    %%% Pour luabidi buggé (<- Omega, anciennement renommé)
+% \let\luatexboxdir=\boxdir      %%% Pour luabidi buggé (<- Omega, anciennement renommé)
+% \usepackage{luabidi}           % Pour langues sinistroverses
+% Pour langues sinistroverses (LuaTeX)
+% NB. Aleph Directions: TLT (latin), TRT (arabic), RTT (cjk), LTL (mongolian)
+\newcommand*{\RL}[1]{\begingroup\textdir TRT#1\endgroup}
+\newcommand*{\LR}[1]{\begingroup\normalfont\textdir TLT#1\endgroup} % Revient en police "normale"
+\newenvironment{RTL}{\textdir TRT\pardir TRT\bodydir TRT}{}
+\newenvironment{LTR}{\textdir TLT\pardir TLT\bodydir TLT}{}
+\newenvironment{RTT}[1][\baselineskip]{\begin{minipage}[t][\baselineskip]{#1}%
+  \CJKfont\textdir RTT\pardir RTT\bodydir RTT}{\end{minipage}}   % vertical !
+%
+\usepackage[localmarks,babelshorthands,quiet]{polyglossia}   % localmarks => \markboth etc. + babelshorthands => : ; ? ! 
+\setdefaultlanguage{french}      % En français, s.v.p.
+\setotherlanguage[variant=usmax]{english}   % avec anglais 2d
+% \setdefaultlanguage[variant=usmax]{english}   % En anglais
+% \setotherlanguage{french}      %  avec français 2d
+% \setotherlanguage[variant=ancient]{greek}
+\usepackage{csquotes}            % Format des citations et guillement
+\DeclareQuoteStyle{french}%        Paramètres pour dito
+  {\guillemotleft~}{~\guillemotright}%
+  {\textquotedblleft}{\textquotedblright}
+\usepackage{geometry}          % Dimension des marges etc.
+\geometry{                     % Paramètres pour dito
+  inner=25mm,outer=20mm,
+  top=25mm,bottom=25mm,head=15pt,
+  marginpar=15mm,marginparsep=6pt,
+}
+\usepackage{enumitem}          % Mise en page des listes
+\setlist[1]{labelindent=\parindent} % paramètres pour dito (identation de base)
+\usepackage{graphicx}          % Inclusion de figures et graphiques
+\graphicspath{{$HOME/Images/Logos/}{$HOME/}}
+\usepackage{xcolor}            % Caractères colorés
+\definecolor{Pantone287}{RGB}{0,76,147} % Couleur Logo ULB
+\usepackage{fancyvrb}          % Environnement 'Verbatim' (avec majuscule !)
+\usepackage{numprint}          % Formatage des nombres
+\npfourdigitnosep              % Paramètres pour dito
+\usepackage{caption}           % Titres des figures et tables plus corrects
+\captionsetup{labelfont=sc,labelsep=endash,position=top} % Paramètres pour dito
+\captionsetup[figure]{name=Schéma}                       % idem (suite)
+\captionsetup[table]{name=Table}                         % idem (suite)
+% \usepackage{tabularx}          % Tableaux à colonnes de largeur variable
+\usepackage{longtable}         % Tableaux sur plusieurs pages etc.
+\usepackage[                   % Insertion de marques "to do"
+  textsize=tiny,
+  minNoteWidth=13mm,
+  backgroundcolor=yellow
+  ]{luatodonotes}
+\usepackage{hyperref}          % Table des matières en signets (PDF-LaTeX)
+\hypersetup{                   % Paramètres pour dito
+  unicode,
+  bookmarksnumbered,
+  breaklinks,
+  nesting,
+  pdftitle={\thetitle},
+  pdfauthor={\theauthor},
+  pdfsubject={\thesubject},
+  pdfkeywords={\thekeywords},
+  pdflang={\thelang},
+}
+%---
+% \VerbatimFootnotes             % Permet ainsi \verb en note de bas de page
+% ---------------------------------------------------------------------------
+% Outils graphiques ("Portable Graphics Format" + "TikZ ist kein Zeichenprogramm")
+\usepackage{pgf}               % in tikz, mais utile pour option
+\usepgflibrary{decorations.markings}
+\usepackage{tikz}              % in pgfplots, mais utle pour biblios
+\usetikzlibrary{shapes,arrows,chains,calc}
+\usepackage{pgfplots}          % Graphiques en 2D et 3D
+\pgfplotsset{compat=1.15}      % Bonne version pour dito
+% \usetikzlibrary{               % autres options ?
+%   backgrounds,
+%   mindmap,
+%   trees,
+%   automata,
+%   positioning,
+%   fit,
+%   shapes.multipart
+% }
+% ---------------------------------------------------------------------------
+% En-tête et pied de page
+\usepackage[useregional,showdow,showseconds=false,showzone=false,%
+    datesep=/,timesep=\ensuremath{\colon\!\!\!}]{datetime2}
+\usepackage{lastpage}
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+  \renewcommand{\sectionmark}[1]{\markboth{#1}{}}
+  \renewcommand{\subsectionmark}[1]{\markright{#1}}
+  \fancyhf{}
+  \fancyhead[LO,RE]{\nouppercase{\leftmark}}
+  \fancyhead[RO,LE]{\slshape\footnotesize\nouppercase{\rightmark}}
+  \fancyfoot[LO,RE]{\footnotesize\texttt{\thefilename} \\ \DTMsetstyle{default}\DTMnow}
+  \fancyfoot[C]{-~\thepage~/~\pageref{LastPage}~-}
+  \fancyfoot[RO,LE]{\footnotesize\theauthor \\ \thetitle}
+%
+\fancypagestyle{plain}{ %  Première page ----------------------
+  \fancyhf{}
+  \renewcommand{\headrulewidth}{0pt}
+  \fancyheadoffset[R]{15mm}
+%   \addtolength{\headheight}{35pt}    % pour warning, mais...
+%   \addtolength{\textheight}{-35pt}   % semble sans effet !
+  \fancyhead[L]{
+    \raisebox{-7mm}{
+      \parbox{\textwidth}{
+        \includegraphics{barrette-original} \\[\baselineskip]
+        \fontsize{8pt}{10pt}\selectfont
+        \sffamily\color{Pantone287}
+        FACULTÉ DES SCIENCES       \\
+        DÉPARTEMENT D'INFORMATIQUE
+      }
+    }
+  }
+  \fancyhead[R]{
+    \raisebox{-10mm}[0pt][0pt]{\includegraphics[width=120mm]{ULB-ligne-gauche}}
+  }
+  \fancyfoot[L]{\raisebox{0mm}{}\color{Pantone287}\footnotesize\texttt{\thefilename} \\
+                                \DTMsetstyle{default}\DTMnow}
+  \fancyfoot[C]{-~\thepage~/~\pageref{LastPage}~-}
+  \fancyfoot[R]{
+    \raisebox{-12pt}{\includegraphics[height=\footskip]{sceau-b-quadri}}
+  }
+} % Fin de première page
+% ---------------------------------------------------------------------------
+% Mise en page de programmes et algorithmes
+\usepackage{listings}
+\lstdefinelanguage[Extended]{C++}[ISO]{C++}{ % extension: description d'algo
+  morekeywords={algo,assert,downto,esac,fi,forall,input,loop,mod,od,
+                otherwise,output,pool,repeat,stopif,then,until,upto,when},
+  literate={<-}{\ensuremath{\leftarrow}}{3}
+           {<->}{\ensuremath{\rightleftharpoons}}{3} % after '<-' definition
+           {&&}{\ensuremath{\wedge}}{3}
+           {||}{\ensuremath{\vee}}{3}
+           {!}{\ensuremath{\neg}}{3}
+           {<=}{\ensuremath{\leq}}{3}
+           {>=}{\ensuremath{\geq}}{3}
+           {!=}{\ensuremath{\neq}}{3} % after '!' definition
+           {==}{\ensuremath{\equiv}}{3},
+}
+\lstloadlanguages{[ISO]C++,[Extended]C++}
+% Styles définis pour environnement {lstlisting}
+\lstdefinestyle{Clong}{ % Pour inclusion fixe d'un fichier
+  firstline=5,
+  firstnumber=1,
+  belowskip=\bigskipamount,
+  frame=tb,
+  columns=[c]flexible,
+}
+\lstdefinestyle{Cfloat}{ % Pour inclusion flottante d'un fichier
+  firstline=5,
+  firstnumber=1,
+  float,
+  frame=tb,
+  columns=[c]flexible,
+}
+\lstdefinestyle{Cpart}{ % Pour morceaux de programme
+  texcl,
+  escapeinside={/*@}{@*/},
+  escapebegin={\sffamily\itshape},
+  columns=[c]flexible,
+}
+\lstdefinestyle{Cin}{ % Pour écriture directe d'un code C++
+  frame=tb,
+  texcl,
+  escapeinside={/*@}{@*/},
+  escapebegin={\sffamily\itshape},
+  columns=[c]flexible,
+}
+\lstdefinestyle{Cext}{ % Pour description d'un algorithme
+  language=[Extended]C++,
+  texcl,
+  mathescape,
+  escapeinside={/*@}{@*/},
+  escapebegin={\sffamily\itshape},
+  columns=[c]flexible,
+}
+\lstset{ % Paramètres par défaut définis en fonction de \lstinline
+  language=[ISO]C++,
+  gobble=2, % Oubli des 2 premiers caractères de la ligne
+  basicstyle={\ttfamily\small},
+  commentstyle={\sffamily\itshape},
+%   stringstyle=\itshape,
+  tabsize=3,
+  numbers=left,
+%   stepnumber=5,
+  numberstyle=\tiny,
+  numbersep=6pt,
+  floatplacement=htb,
+  belowcaptionskip=\medskipamount, % \bigskipamount,
+  xleftmargin=28.45275pt, % = 1cm
+  framexleftmargin=28.45275pt, % = 1cm
+%   resetmargins,
+  breaklines,
+  breakindent=28.45275pt, % = 1cm
+  columns=[c]fullflexible,
+  keepspaces=true,
+  fancyvrb=true,
+}
+% Commandes associées utiles
+\newcommand{\lstlbl}[1]{#1} % Pour étiqueter un programme (cf. \label)
+\newcommand{\lstcap}[1]{#1} % Pour titrer un programme (cf. \caption)
+\newcommand{\lstref}[1]{ % Pour référence en marge à un fichier de programmes
+  \mymarginpar{\tiny\ttfamily<#1>}
+}
+\newcommand{\lstinputf}[3]{ % Inclusion flottante
+  \mymarginpar{\tiny\ttfamily<#1>}
+  \lstinputlisting[style=Cfloat,caption={#2 - \texttt{<#1>}},label={#3}]{#1}%
+}
+\newcommand{\lstinput}[3]{ % Inclusion fixe
+  \mymarginpar{\tiny\ttfamily<#1>}
+  \lstinputlisting[style=Clong,caption={#2 - \texttt{<#1>}},label={#3}]{#1}
+}
+\newcommand{\lstfn}{\lstinline [basicstyle=\footnotesize]} % En bas de page
+%
+% ---------------------------------------------------------------------------
+% Abréviations utiles
+\newcommand{\og}{\guillemotleft}
+\newcommand{\fg}{\guillemotright\xspace}
+\newcommand{\cpp}{\mymarginpar{\fbox{\large\ttfamily C++}}}
+\newcommand{\Cpp}{\texttt{C++}\xspace}
+\newcommand{\Java}{\texttt{Java}\xspace}
+\newcommand{\ie}{\textit{i.e.}\ }  % ID EST
+\newcommand{\eg}{\textit{e.g.}\ }  % EXEMPLI GRATIA
+\newcommand{\cf}{\textit{cf.}\ }   % CONFER
+\newcommand{\vs}{\textit{vs.}\ }   % VERSUS
+\newcommand{\PP}{\mathbb{P}}       % Probability: \Pr variant
+\newcommand{\Exp}{\mathbb{E}}      % Expected value
+\DeclareMathOperator{\rank}{rank}  % Rank of matrix
+\DeclareMathOperator{\im}{im}      % Image of
+\DeclareMathOperator{\lcm}{lcm}    % Least Commun Mutliple
+% ---------------------------------------------------------------------------
+% Environnements "théorème" francisés
+% \renewcommand{\qed}{\hspace*{1em}\hfill\ensuremath{\blacksquare}}  % QUOD ERAT DEMONSTANDUM (U+220E)
+% \renewcommand{\qedsymbol}{\ensuremath{\blacksquare}}  % QUOD ERAT DEMONSTANDUM (U+220E)
+\renewcommand{\qed}{\hspace*{1em}\hfill\ensuremath{\QED}}  % QUOD ERAT DEMONSTANDUM (U+220E) (nécessite unicode-math)
+\renewcommand{\qedsymbol}{\QED}    % QUOD ERAT DEMONSTANDUM (U+220E) (nécessite unicode-math)
+\theoremstyle{definition}
+  \newtheorem*{definition}{Définition}
+  \newtheorem*{definitions}{Définitions}
+\theoremstyle{remark}
+  \newtheorem{remarque}{Remarque}
+  \newtheorem*{exemple}{Exemple}
+  \newtheorem*{exemples}{Exemples}
+  \newtheorem*{note}{Note}
+\theoremstyle{plain}
+  \newtheorem{theoreme}{Théorème}[section]
+  \newtheorem{lemme}[theoreme]{Lemme}
+  \newtheorem{corollaire}[theoreme]{Corollaire}
+  \newtheorem{propriete}[theoreme]{Propriété}
+  \newtheorem{conjecture}[theoreme]{Conjecture}
+% ---------------------------------------------------------------------------
+% Contexte "questions"
+\newcounter{quest}
+\newcommand{\question}[2]{% En-tête "Question"
+  \addtocounter{quest}{1}
+  \section*{Question~\thequest.~-- #1 {\small(#2~points)}}%
+}
+% ---------------------------------------------------------------------------
+\begin{document}
+%
+% Titre des preuves en gras
+\let\oldproofname=\proofname
+\renewcommand{\proofname}{\bfseries\oldproofname}
+% Version française des titres (surcharge babel après \begin{document})
+\renewcommand{\listfigurename}{Liste des schémas}
+\renewcommand{\listtablename}{Liste des tables}
+\renewcommand{\lstlistingname}{Programme}
+\renewcommand{\lstlistlistingname}{Liste des programmes}
+%
+\maketitle
+%
+\begin{abstract}
+Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco <<laboris nisi>> ut aliquip ex ea commodo consequat.
+\end{abstract}
+
+%\setquotestyle{english}
+\textquote[Georges Perec]{Portez ce vieux whisky au juge blond qui fume.}
+%\setquotestyle{french}
+\blockquote[Bel inconnu]{\sl Portez ce vieux whisky au juge blond qui fume sur son île intérieure, à côté de l’alcôve ovoïde, où les bûches se consument dans l’âtre, ce qui lui permet de penser à la cænogénèse de l’être dont il est question dans la cause ambiguë entendue à Moÿ, dans un capharnaüm qui, pense-t-il, diminue çà et là la qualité de son œuvre.}
+%\setquotestyle{french}
+
+\section{On teste}
+
+Dès Noël où un zéphyr haï me vêt\textbf{[ le flanc]} de glaçons würmiens,\textit{[ en effet,]} je dîne enfin d'exquis rôtis de bœuf au kir à l'aÿ d'âge mûr \& cætera. (Gilles Esposito-Farèse)
+
+M\textsc{Mx}x. \textsc{Dès Noël où un zéphyr haï me vêt\textbf{[ le flanc]} de glaçons würmiens,\textit{[ en effet,]} je dîne enfin d'exquis rôtis de bœuf au kir à l'aÿ d'âge mûr \& cætera.}
+
+DÈS NOËL OÙ UN ZÉPHYR HAÏ ME VÊT\textbf{[ LE FLANC]} DE GLAÇONS WÜRMIENS,\textit{[ EN EFFET,]} JE DÎNE ENFIN D'EXQUIS RÔTIS DE BŒUF AU KIR À L'AŸ D'ÂGE MÛR \& CÆTERA.
+
+\noindent L'alphabet français comprend aujourd'hui 42~lettres (et non 26): \\*
+\indent a b c d e f g h i j k l m n o p q r s t u v w x y z
+\hspace*{1cm} à â é è ê ë î ï ô ù û ü ÿ ç æ œ \\ 
+ainsi que les ligatures techniques: \\*
+\indent ff fi fl ffi ffl   \\*
+\indent ﬀ  ﬁ  ﬂ  ﬃ   ﬄ  \\
+et parfois les ligatures antiques: \\*
+\indent ſt
+st sp ct cp    \\*
+\indent{\addfontfeatures{Ligatures={Historic,Rare}} ſt st sp ct cp} \\*
+\indent ﬅ  ﬆ
+
+\subsection{Autres alphabets}
+
+Grec: \enquote{\rmfamily Εὐκλείδης} ou \enquote{\sffamily Εὐκλείδης} ou \enquote{Εὐκλείδης} ou \enquote{\bfseries Εὐκλείδης}.% Erreur d'espace !
+
+Grec: \og\textrm{Εὐκλείδης}\fg ou \og\textsf{Εὐκλείδης}\fg ou \og Εὐκλείδης\fg ou \og\textbf{Εὐκλείδης}\fg.
+
+Russe: \og\textrm{Колмогоров}\fg ou \og\textsf{Колмогоров}\fg ou \og Колмогоров\fg ou \og\textbf{Колмогоров}\fg.
+
+Hébreu: \og\textrm{\RL{אברהם}}\fg ou \og\textsf{\RL{אברהם}}\fg ou \og\textHebrew{אברהם}\fg  ou \og\textbf{\textHebrew{אברהם}}\fg ou Hello!
+
+Arabe: \og\textrm{\RL{اﻟﺨﻮارزﻣﻲ}}\fg ou \og\textsf{\RL{اﻟﺨﻮارزﻣﻲ}}\fg ou \og\textArabic{اﻟﺨﻮارزﻣﻲ}\fg ou \og\textbf{\textArabic{اﻟﺨﻮارزﻣﻲ}}\fg ou Hello!
+
+Hébreu:
+\begin{Hebrew}
+
+אברהם
+\LR{Hello!}
+\end{Hebrew}
+
+Arabe:
+\begin{Arabic}
+
+اﻟﺨﻮارزﻣﻲ
+\LR{Hello!}
+\end{Arabic}
+
+\subsection{Vertical}
+
+CJK: \og\textCJK{錢天問}\fg ou \og\textbf{\textCJK{錢天問}}\fg ou Hello!
+
+\begin{RTT}% Warning, car texte trop long
+錢天問
+\end{RTT}
+\begin{RTT}[3em]
+錢天問
+\end{RTT}
+Lorem ipsum.
+
+\subsection{On reprend}
+
+Les naïfs ægithales hâtifs pondant à Noël dans un cañon où il gèle sont sûrs d'être déçus et de voir leurs drôles d'œufs abîmés. À quoi bon? Ça ne marche pas. Évidemment! Œdipe et Ève avaient raison. Ô Ânes bâtés, demandez-vous: \enquote*{Être ou ne pas être?} ou \enquote{Être ou ne pas être?}, entre nous.
+
+\noindent L'alphabet français comprend aujourd'hui 42~lettres (et non 26): \\*
+\indent a b c d e f g h i j k l m n o p q r s t u v w x y z
+\hspace*{1cm} à â é è ê ë î ï ô ù û ü ÿ ç æ œ \\ 
+ainsi que les ligatures techniques: \\*
+\indent ff fi fl ffi ffl   \\*
+\indent ﬀ  ﬁ  ﬂ  ﬃ   ﬄ  \\
+ou les ligatures antiques: \\*
+\indent ſt
+st sp ct cp    \\*
+\indent{\addfontfeatures{Ligatures={Historic,Rare}} ſt st sp ct cp} \\*
+\indent ﬅ  ﬆ
+
+\section{Scientia gratias}
+
+Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Morbi sed justo. Cras venenatis rhoncus eros. Ut dictum elit vitae diam. Praesent in velit. \mymarginpar{In illo tempore erat fortissimus vir}Proin aliquam nulla eget nisl. Donec sed diam ac sem hendrerit mollis. \textsf{Suspendisse id justo.}\\
+Suspendisse id justo.\\
+Duis mollis, risus quis gravida dapibus, magna tortor sodales mauris, et ultricies magna orci a eros. Aliquam ac nisi. Aliquam nonummy placerat leo. In gravida. Aliquam erat volutpat. Phasellus euismod mauris non justo. Mauris ante ligula, semper pellentesque, sollicitudin nec, varius at, mauris. Mauris nec metus nec quam egestas congue.
+
+Nam ut lorem sed neque lobortis iaculis. Nunc nulla lorem, dictum non, auctor sit amet, tempus ut, arcu. Vivamus tortor ante, porta a, pellentesque non, semper et, enim.
+\begin{itemize}
+  \item Phasellus sodales. Aliquam erat volutpat. Suspendisse magna neque, luctus ac, dictum at, sagittis sed, turpis.
+  \item Donec tempus dolor vitae nibh aliquet dictum.
+  \item Lorem ipsum dolor sit amet, consectetuer adipiscing elit.
+\end{itemize}
+Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Nam tempus sodales sem. Nam risus pede, rutrum sit amet, molestie a, mollis a, nibh. Curabitur lorem ligula, bibendum a, rhoncus at, tempus nec, ante. Nulla quis libero in sapien laoreet fringilla. Aenean justo.
+
+\subsection{Ad vitam}
+
+Nunc tempor. Nam elit. Praesent vulputate. Praesent\footnote{Lorem ipsum dolor sit amet, consectetuer adipiscing elit.} risus. Quisque convallis lectus vitae erat. Integer eget urna eu enim dictum eleifend. 
+\begin{enumerate}
+  \item Fusce malesuada ultricies tortor.
+  \item Pellentesque semper pede eu eros.
+\end{enumerate}
+Quisque in nisl. Ut dapibus leo eget tellus.
+
+Duis ac lacus. Integer dapibus, erat et iaculis pulvinar, mauris leo varius purus, eget interdum massa tellus nec mauris. Phasellus malesuada egestas lorem. \mymarginpar{Nunc est bibendum} Mauris nisi massa, rutrum in, varius non, nonummy et, est. Nunc volutpat. Nullam ultrices aliquam orci. Nullam eget neque. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos hymenaeos. Nunc aliquam fermentum turpis. Nullam elit felis, nonummy sed, dictum ac, vestibulum ut, augue. Curabitur orci. Maecenas at odio vitae felis congue lobortis. Sed iaculis metus et ante iaculis vestibulum.
+
+In molestie leo sollicitudin pede. Cras porttitor nulla nec nulla. Vivamus cursus mollis purus. Aliquam ac sapien. Nullam metus felis, porta quis, convallis eget, adipiscing quis, dolor. Duis accumsan velit et turpis. Curabitur posuere. Donec vitae magna. Etiam tellus mi, laoreet sit amet, fermentum in, fringilla ut, mi. Ut mi risus, iaculis sit amet, gravida vitae, suscipit et, orci. Duis sit amet enim sed lectus ullamcorper fringilla. Sed quis sapien.
+
+\section{Élève d'Euclide}
+
+Euclide (Εὐκλείδης) nous a enseigné une méthode efficace \texttt{\textbf{algo} PGCD} de calcul du plus grand commun diviseur de deux nombres naturels.\cpp
+\begin{lstlisting}[style=Cext,caption=\lstcap{Algorithme d'Euclide},
+% label={alg:euclide}]
+label=\lstlbl{alg:euclide}]
+  algo PGCD (a, b)
+    input a, b
+    while b != 0 do
+      r := a mod b /*@\label{alg:Refmod}@*/
+      a := b; b := r
+    od
+    output a
+\end{lstlisting}
+
+\subsection{On va analyser}
+
+Pour toutes valeurs entières non négatives $a$ et $b$ équiprobables ($\sum_{i=1}^n a_{\ell_i} = 1$), le nombre \emph{moyen} d'itérations du programme~\ref{alg:euclide} est
+  \[ X_{i_j}^* = H(b) = \sum_{r=1}^b \frac{1}{r} \qquad \forall a, b  \]
+et asymptotiquement, on a
+  \[ H(b) = \ln b + \gamma (γ) + \frac{1}{2b} - o(\frac{1}{b}) \]
+où \todo{Origine?}$\gamma\approx0.5772156649$ est la \emph{constante d'Euler}.\qed
+
+\begin{table}[htb]
+  \caption{Complexité de l'algorithme d'Euclide}
+  \centering
+  \begin{tabular}{l|ccc}
+    Complexité & Minimale         & En moyenne       & Maximale         \\
+    \hline
+    Spatiale   & $\Theta(1)$      & $\Theta(1)$      & $\Theta(1)$      \\
+               & $3$              & $3$              & $3$              \\
+    \hline
+    Temporelle & $\Theta(1)$      & $\Theta(\log b)$ & $\Theta(\log b)$ \\
+               & $0$              & $H(b)$           &
+                             $\left\lceil \log_\phi b \right\rceil + 1$ \\
+  \end{tabular}
+\end{table}
+
+\begin{theoreme}
+  Le nombre \emph{maximum} d'itérations est indépendant de $a$ et, pour $b>0$\footnote{Il est nul pour $b=0$.}, il vaut
+    \[ \left\lceil \log_\phi b \right\rceil + 1 \]
+  où $\phi=1+\frac{1}{\phi}=\frac{1+\sqrt{5}}{2}\approx1.618034$ est le \enquote{nombre d'or}; cette borne est atteinte pour certaines données.
+\end{theoreme}
+\begin{proof}
+  C'est immédiat!
+\end{proof}
+% ---------------------------------------------------------------------------
+%
+\clearpage
+\fancyhead[RO,LE]{}
+\setlength{\parskip}{0pt}
+\addcontentsline{toc}{section}{\protect\numberline{}{\listfigurename}}
+\listoffigures
+\addcontentsline{toc}{section}{\protect\numberline{}{\listtablename}}
+\listoftables
+\addcontentsline{toc}{section}{\protect\numberline{}{\lstlistlistingname}}
+\lstlistoflistings
+%
+\begin{thebibliography}{99}
+  \addcontentsline{toc}{section}{\protect\numberline{}{\refname}}
+
+  \bibitem{SHANNON_WEAVER}
+    \textsc{Shannon}, Claude E. \& \textsc{Weaver}, Warren,
+    \emph{The Mathematical Theory of Communication},
+    Vol\@. 1,
+    132~pp.
+    The University of Illinois Press, Urbana
+    (Sept\@. 1949).
+
+  \bibitem{MASSEY}
+    \textsc{Massey}, James Lee,
+    \enquote*{Shift-register synthesis and BCH decoding},
+    \emph{IEEE Trans\@. Inf\@. Theory},
+    \textbf{IT-15}(1),
+    122--127
+    (Jan\@. 1969).
+
+\end{thebibliography}
+%
+\addcontentsline{toc}{section}{\protect\numberline{}{\contentsname}}
+\tableofcontents
+\clearpage
+\listoftodos
+%
+\end{document}
+%
